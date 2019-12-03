@@ -1,6 +1,6 @@
 package com.zed.reptile.core.utils;
 
-import com.zed.reptile.core.HttpGetHTML;
+import com.zed.reptile.core.http.HttpGetHTML;
 
 import java.io.IOException;
 import java.util.ArrayList;

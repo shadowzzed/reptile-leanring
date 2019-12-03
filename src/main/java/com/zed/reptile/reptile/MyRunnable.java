@@ -1,7 +1,7 @@
 package com.zed.reptile.reptile;
 
 import com.zed.reptile.core.Config;
-import com.zed.reptile.core.HttpGetHTML;
+import com.zed.reptile.core.http.HttpGetHTML;
 import com.zed.reptile.scheduled.ProxyProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,11 +29,12 @@ public class MyRunnable implements Runnable {
     @Autowired
     public MyRunnable(Config config) {
         this.config = config;
+        list_url.add(this.config.targetURL);
     }
 
     private static final String href = "href=\".*?\"";
 
-    List<String> list_url = new ArrayList<>();
+    private static List<String> list_url = new ArrayList<>();
 
     @Bean
     public void read() {
@@ -40,10 +42,26 @@ public class MyRunnable implements Runnable {
         executorService.execute(new MyRunnable(config));
     }
 
-    public void readIndex() throws InterruptedException {
+    private synchronized String getURL() {
+        Iterator<String> iterator = list_url.iterator();
+        String url = null;
+        while (iterator.hasNext()) {
+            url = iterator.next();
+            iterator.remove();
+            return url;
+        }
+        return null;
+    }
 
+    private void readIndex() throws InterruptedException {
+        // 1.读取URL
+        String targetURL = this.getURL();
+        if (StringUtils.isEmpty(targetURL))
+            throw new NullPointerException("URL为空");
         Pattern pattern = Pattern.compile(href);
-        String content = this.rep(ProxyProvider.getProxy(), config.targetURL, config.targetFormat);
+//        String content = this.rep(ProxyProvider.getProxy(), targetURL, config.targetFormat);
+        String content = this.rep(null, targetURL, config.targetFormat);
+        //发现新的url
         Matcher matcher = pattern.matcher(content);
         while (matcher.find()) {
             String url = matcher.group();
@@ -56,17 +74,22 @@ public class MyRunnable implements Runnable {
             else
                 list_url.add(config.targetURL + url);
         }
-        System.out.println(list_url.size());
+        // 2.读取页面中需要提取的东西
+        this.getIndexContent(content);
+    }
+
+    private void getIndexContent(String content) {
 
     }
 
     /**
-     * 动态IP爬取页面
+     * 爬取页面封装 如果传入代理则走代理 如果没有则直接爬取
      * @param proxy
      * @return
      */
     private String rep(String proxy, String url, String format) {
         String content = null;
+        // 走代理
         if (!StringUtils.isEmpty(proxy)) {
             String[] strings = proxy.split(",");
             try {
@@ -81,9 +104,17 @@ public class MyRunnable implements Runnable {
                 String proxy_instead = ProxyProvider.getProxy();
                 rep(proxy_instead, url, format);
             }
+            // 如果爬取的代理连接上限了
+            if (!StringUtils.isEmpty(content) && content.startsWith("Maximum number of open connections reached"))
+                rep(ProxyProvider.getProxy(), url, format);
+        } else {
+            // 直接爬取
+            try {
+                content = HttpGetHTML.getContentDirect(url, format);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        if (content.startsWith("Maximum number of open connections reached"))
-            rep(ProxyProvider.getProxy(), url, format);
         return content;
     }
 

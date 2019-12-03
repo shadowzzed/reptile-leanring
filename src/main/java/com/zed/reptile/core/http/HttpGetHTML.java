@@ -1,4 +1,4 @@
-package com.zed.reptile.core;
+package com.zed.reptile.core.http;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;

@@ -4,6 +4,8 @@ import com.zed.reptile.core.Config;
 import com.zed.reptile.core.utils.HttpProxyUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +16,7 @@ import java.util.List;
  * @author Zeluo
  * @date 2019/12/2 13:41
  */
+@Component
 public class ProxyProvider {
 
     @Autowired
@@ -24,15 +27,16 @@ public class ProxyProvider {
     /**
      * 每秒爬取一次网页刷新list
      */
-    @Scheduled(fixedDelay = 1000L)
+    @Scheduled(fixedDelay = 100000L)
     public void getProxyList() {
-        list.clear();
+//        list.clear();
         try {
             list = HttpProxyUtils.getProxyList(config.proxyURL, config.proxyFormat);
             config.on = true;
         } catch (IOException e) {
             e.printStackTrace();
         }
+        System.out.println(list.size());
     }
 
     public synchronized static String getProxy() {
@@ -40,6 +44,10 @@ public class ProxyProvider {
         while (iterator.hasNext()) {
             String proxy = iterator.next();
             iterator.remove();
+            if (StringUtils.isEmpty(proxy)) {
+                proxy = iterator.next();
+                iterator.remove();
+            }
             return proxy;
         }
         return null;
