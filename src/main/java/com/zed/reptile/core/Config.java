@@ -21,5 +21,9 @@ public class Config {
     @Value("${target.format}")
     public String targetFormat;
 
+    @Value("${start.status}")
     public Boolean on;
+
+    @Value("${pool.executors.size}")
+    public int executorsPoolSize;
 }

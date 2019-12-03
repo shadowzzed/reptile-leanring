@@ -1,5 +1,6 @@
 package com.zed.reptile.demo;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -22,14 +23,16 @@ import java.util.regex.Pattern;
  * @author Zeluo
  * @date 2019/11/28 16:29
  */
+@Slf4j
 public class ReptileDemo {
     private static final String href = "href=\".*?\"";
 
-    private static final String url = "http://www.89ip.cn/index_1.html";
+    private static final String url = "https://item.jd.com/100003395445.html";
 
     private static List<String> list = new ArrayList<>();
 
     public static void main(String[] args) throws Exception {
+        log.info("tst");
         String content = getContent(url);
         Pattern pattern = Pattern.compile(href);
         Matcher matcher = pattern.matcher(content);
@@ -46,14 +49,17 @@ public class ReptileDemo {
             }
             list.add(url + subURL);
         }
-
-        for (String str: list) {
-            System.out.println("********************************************");
-            String con = getContent(str);
+        int count = 0;
+        System.out.println(list.size());
+//        for (String str: list) {
+//            System.out.println(count++);
+////            System.out.println("********************************************");
+//            String con = getContent(str);
+//            log.info(con);
 //            System.out.println(con);
-            System.out.println("********************************************");
-            Thread.sleep(5000L);
-        }
+////            System.out.println("********************************************");
+////            Thread.sleep(5000L);
+//        }
     }
 
     private static String getContent(String url) throws IOException {
@@ -61,13 +67,13 @@ public class ReptileDemo {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet httpGet = new HttpGet(url);
         httpGet.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36");
-        HttpHost proxy = new HttpHost("120.77.253.219",80);
+        HttpHost proxy = new HttpHost("182.34.17.78",9999);
         RequestConfig config = RequestConfig.custom()
                 .setProxy(proxy)
                 .setConnectTimeout(10000)
-                .setSocketTimeout(10000)
+                .setSocketTimeout(30000)
                 .build();
-        httpGet.setConfig(config);
+//        httpGet.setConfig(config);
         CloseableHttpResponse response = httpClient.execute(httpGet);
 //        if (response.getStatusLine().getStatusCode() == 200) {
 //            Header[] allHeaders = response.getAllHeaders();
@@ -75,7 +81,7 @@ public class ReptileDemo {
 //            headers.forEach(str -> System.out.println("header:" + str));
 //        }
         HttpEntity entity = response.getEntity();
-        String content = EntityUtils.toString(entity, "gb2312");
+        String content = EntityUtils.toString(entity, "utf-8");
         System.out.println(content);
         EntityUtils.consume(entity);
         return content;

@@ -1,4 +1,4 @@
-package com.zed.reptile.scheduled;
+package com.zed.reptile.proxy;
 
 import com.zed.reptile.core.Config;
 import com.zed.reptile.core.utils.HttpProxyUtils;
@@ -36,7 +36,6 @@ public class ProxyProvider {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println(list.size());
     }
 
     public synchronized static String getProxy() {

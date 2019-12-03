@@ -2,8 +2,10 @@ package com.zed.reptile.reptile;
 
 import com.zed.reptile.core.Config;
 import com.zed.reptile.core.http.HttpGetHTML;
-import com.zed.reptile.scheduled.ProxyProvider;
+import com.zed.reptile.proxy.ProxyProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.stream.annotation.EnableBinding;
+import org.springframework.cloud.stream.messaging.Processor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -23,8 +25,12 @@ import java.util.regex.Pattern;
  * @date 2019/12/2 14:12
  */
 @Component
+@EnableBinding({Processor.class})
 public class MyRunnable implements Runnable {
     private Config config;
+
+    @Autowired
+    Processor source;
 
     @Autowired
     public MyRunnable(Config config) {
@@ -53,32 +59,38 @@ public class MyRunnable implements Runnable {
         return null;
     }
 
-    private void readIndex() throws InterruptedException {
-        // 1.读取URL
+    private void readIndex(String proxy) throws InterruptedException {
         String targetURL = this.getURL();
         if (StringUtils.isEmpty(targetURL))
             throw new NullPointerException("URL为空");
-        Pattern pattern = Pattern.compile(href);
-//        String content = this.rep(ProxyProvider.getProxy(), targetURL, config.targetFormat);
-        String content = this.rep(null, targetURL, config.targetFormat);
+        String content = this.rep(proxy, targetURL, config.targetFormat);
+        if (StringUtils.isEmpty(content))
+            throw new NullPointerException("content为空");
+        // 1.读取URL放到队列中
+        this.getIndexURL(content);
+        // 2.读取页面中需要提取的东西
+        this.getIndexContent(content);
+    }
+
+    private void getIndexURL(String content) {
         //发现新的url
+        Pattern pattern = Pattern.compile(href);
         Matcher matcher = pattern.matcher(content);
         while (matcher.find()) {
             String url = matcher.group();
             if (url.endsWith("js") ||
-            url.endsWith("css") ||
-            url.endsWith("png"))
+                    url.endsWith("css") ||
+                    url.endsWith("png"))
                 continue;
             if (url.startsWith("http"))
                 list_url.add(url);
             else
                 list_url.add(config.targetURL + url);
         }
-        // 2.读取页面中需要提取的东西
-        this.getIndexContent(content);
     }
 
     private void getIndexContent(String content) {
+        // 提取信息
 
     }
 
@@ -120,17 +132,12 @@ public class MyRunnable implements Runnable {
 
     @Override
     public void run() {
-        while (!config.on) {
+        while (true) {
             try {
-                Thread.sleep(1000L);
+                this.readIndex(ProxyProvider.getProxy());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }
-        try {
-            this.readIndex();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 }

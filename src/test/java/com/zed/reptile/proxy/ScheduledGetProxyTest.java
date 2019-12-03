@@ -1,11 +1,9 @@
-package com.zed.reptile.scheduled;
+package com.zed.reptile.proxy;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Zeluo
